@@ -1,8 +1,8 @@
 name: X to Bilibili Sync
 on:
   schedule:
-    - cron: "*/10 * * * *"  # 每10分钟检查一次
-  workflow_dispatch:
+    - cron: "*/10 * * * *"  # 每10分钟运行一次
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   sync:
@@ -16,14 +16,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install snscrape bilibili-api-python requests urllib3
+          # 替换snscrape为twscrape
+          pip install twscrape bilibili-api-python requests urllib3
       - name: Run sync script
         env:
           TARGET_X_USERNAME: ${{ secrets.TARGET_X_USERNAME }}
+          X_USER: ${{ secrets.X_USER }}  # 新增：X账号
+          X_PASS: ${{ secrets.X_PASS }}  # 新增：X密码
           BILIBILI_SESSDATA: ${{ secrets.BILIBILI_SESSDATA }}
           BILIBILI_BILI_JCT: ${{ secrets.BILIBILI_BILI_JCT }}
           BILIBILI_BUVID3: ${{ secrets.BILIBILI_BUVID3 }}
-          X_COOKIE: ${{ secrets.X_COOKIE }}  # 新增X Cookie
         run: python sync.py
       - name: Save last tweet ID
         uses: stefanzweifel/git-auto-commit-action@v5
