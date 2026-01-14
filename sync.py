@@ -9,8 +9,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # 配置
 TARGET_X_USERNAME = os.getenv("TARGET_X_USERNAME")
-X_USER = os.getenv("X_USER")  # 你的X账号（手机号/邮箱/用户名）
-X_PASS = os.getenv("X_PASS")  # 你的X账号密码
+X_USER = os.getenv("X_USER")        # X账号（手机号/用户名）
+X_PASS = os.getenv("X_PASS")        # X密码
+X_EMAIL = os.getenv("X_EMAIL")      # X绑定的邮箱
+X_EMAIL_PASS = os.getenv("X_EMAIL_PASS")  #邮箱密码
 LAST_TWEET_ID_FILE = "last_tweet_id.json"
 
 # B站认证
@@ -67,14 +69,13 @@ async def get_x_tweets():
     last_id = load_last_tweet_id()
     # 初始化twscrape
     api = twscrape.API()
-    # 添加X账号（模拟登录）
-    await api.pool.add_account(X_USER, X_PASS)
+    # email和email_password参数
+    await api.pool.add_account(X_USER, X_PASS, X_EMAIL, X_EMAIL_PASS)
     await api.pool.login_all()
 
     # 获取目标账号的原创推文（排除转推）
     tweets = []
     async for tweet in api.user_tweets(TARGET_X_USERNAME, limit=10):
-        # 过滤条件：1. 新推文 2. 原创（无retweetedTweet）
         if tweet.id_str == last_id:
             break
         if not hasattr(tweet, 'retweeted_status'):  # 排除转推
