@@ -36,7 +36,8 @@ def download_image(url, path):
         with open(path, "wb") as f:
             f.write(resp.content)
         return path
-    except:
+    except Exception as e:
+        print(f"图片下载失败: {e}")
         return None
 
 # 发布B站动态
@@ -62,15 +63,26 @@ def publish_to_bilibili(text, image_paths):
 # 主逻辑
 def main():
     last_id = load_last_tweet_id()
-    # 用snscrape爬取X账号最新推文（排除转推）
-    scraper = TwitterUserScraper(TARGET_X_USERNAME, include_retweets=False)
+    # 初始化scraper（移除include_retweets参数）
+    scraper = TwitterUserScraper(TARGET_X_USERNAME)
+    
+    # 遍历推文并过滤转推
+    new_tweets = []
     for tweet in scraper.get_items():
+        # 过滤条件：1. 是新推文（ID≠last_id） 2. 不是转推（retweetedTweet为空）
         if tweet.id == last_id:
-            break  # 只处理新推文
+            break
+        if not tweet.retweetedTweet:  # 只保留原创推文，排除转推
+            new_tweets.append(tweet)
+    
+    # 只处理最新的一条原创新推文
+    if new_tweets:
+        tweet = new_tweets[0]
         # 整理内容
         tweet_text = tweet.content
         tweet_url = f"https://x.com/{TARGET_X_USERNAME}/status/{tweet.id}"
         publish_text = f"{tweet_text}\n\n来源：{tweet_url}\n（自动同步）"
+        
         # 处理图片
         image_paths = []
         if tweet.media:
@@ -79,11 +91,13 @@ def main():
                     img_path = download_image(media.url, f"temp_{idx}.jpg")
                     if img_path:
                         image_paths.append(img_path)
+        
         # 发布到B站
         publish_to_bilibili(publish_text, image_paths)
         # 保存最后推文ID
         save_last_tweet_id(tweet.id)
-        break  # 只处理最新的一条新推文
+    else:
+        print("无新的原创推文，无需同步")
 
 if __name__ == "__main__":
     main()
