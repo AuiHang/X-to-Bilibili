@@ -1,16 +1,17 @@
 import os
 import json
+import asyncio
 import requests
 from bilibili_api import dynamic, Credential, sync
-from snscrape.modules.twitter import TwitterUserScraper
+import twscrape  # 替换snscrape为twscrape
 import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # 忽略SSL警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # 配置
 TARGET_X_USERNAME = os.getenv("TARGET_X_USERNAME")
+X_USER = os.getenv("X_USER")  # 你的X账号（手机号/邮箱/用户名）
+X_PASS = os.getenv("X_PASS")  # 你的X账号密码
 LAST_TWEET_ID_FILE = "last_tweet_id.json"
-X_COOKIE = os.getenv("X_COOKIE")  # 你的X账号Cookie
-
 
 # B站认证
 def get_bilibili_cred():
@@ -19,7 +20,6 @@ def get_bilibili_cred():
         bili_jct=os.getenv("BILIBILI_BILI_JCT"),
         buvid3=os.getenv("BILIBILI_BUVID3")
     )
-
 
 # 加载/保存最后推文ID
 def load_last_tweet_id():
@@ -32,19 +32,16 @@ def save_last_tweet_id(tweet_id):
     with open(LAST_TWEET_ID_FILE, "w", encoding="utf-8") as f:
         json.dump({"last_id": tweet_id}, f)
 
-
 # 下载图片
 def download_image(url, path):
     try:
-        headers = {"User-Agent": "Mozilla/5.0", "Cookie": X_COOKIE}
-        resp = requests.get(url, headers=headers, timeout=10, verify=False)
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10, verify=False)
         with open(path, "wb") as f:
             f.write(resp.content)
         return path
     except Exception as e:
         print(f"图片下载失败: {e}")
         return None
-
 
 # 发布B站动态
 def publish_to_bilibili(text, image_paths):
@@ -65,48 +62,55 @@ def publish_to_bilibili(text, image_paths):
         print(f"B站发布失败: {e}")
         return False
 
+# 异步获取X推文
+async def get_x_tweets():
+    last_id = load_last_tweet_id()
+    # 初始化twscrape
+    api = twscrape.API()
+    # 添加X账号（模拟登录）
+    await api.pool.add_account(X_USER, X_PASS)
+    await api.pool.login_all()
 
-# 主逻辑（带Cookie模拟登录）
+    # 获取目标账号的原创推文（排除转推）
+    tweets = []
+    async for tweet in api.user_tweets(TARGET_X_USERNAME, limit=10):
+        # 过滤条件：1. 新推文 2. 原创（无retweetedTweet）
+        if tweet.id_str == last_id:
+            break
+        if not hasattr(tweet, 'retweeted_status'):  # 排除转推
+            tweets.append(tweet)
+    return tweets
+
+# 主逻辑
 def main():
     last_id = load_last_tweet_id()
-    # 初始化scraper并添加X Cookie
-    scraper = TwitterUserScraper(TARGET_X_USERNAME)
-    scraper._session.headers.update({
-        "Cookie": X_COOKIE,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    })
-
-    # 遍历推文并过滤转推
-    new_tweets = []
-    try:
-        for tweet in scraper.get_items():
-            if tweet.id == last_id:
-                break
-            if not tweet.retweetedTweet:  # 只同步原创推文
-                new_tweets.append(tweet)
-    except Exception as e:
-        print(f"获取推文失败: {e}")
+    # 运行异步函数
+    tweets = asyncio.run(get_x_tweets())
+    
+    if not tweets:
+        print("无新原创推文")
         return
 
     # 处理最新一条新推文
-    if new_tweets:
-        tweet = new_tweets[0]
-        # 整理内容
-        publish_text = f"{tweet.content}\n\n来源：https://x.com/{TARGET_X_USERNAME}/status/{tweet.id}\n（自动同步）"
-        # 下载图片
-        image_paths = []
-        if tweet.media:
-            for idx, media in enumerate(tweet.media):
-                if media.type == "photo":
-                    img_path = download_image(media.url, f"temp_{idx}.jpg")
-                    if img_path:
-                        image_paths.append(img_path)
-        # 发布到B站
-        publish_to_bilibili(publish_text, image_paths)
-        save_last_tweet_id(tweet.id)
-    else:
-        print("无新原创推文")
+    tweet = tweets[0]
+    # 整理内容
+    tweet_text = tweet.rawContent if hasattr(tweet, 'rawContent') else tweet.text
+    tweet_url = f"https://x.com/{TARGET_X_USERNAME}/status/{tweet.id_str}"
+    publish_text = f"{tweet_text}\n\n来源：{tweet_url}\n（自动同步）"
 
+    # 下载图片
+    image_paths = []
+    if hasattr(tweet, 'media') and tweet.media:
+        for idx, media in enumerate(tweet.media):
+            if media.type == "photo":
+                img_url = media.fullUrl
+                img_path = download_image(img_url, f"temp_{idx}.jpg")
+                if img_path:
+                    image_paths.append(img_path)
+
+    # 发布到B站
+    publish_to_bilibili(publish_text, image_paths)
+    save_last_tweet_id(tweet.id_str)
 
 if __name__ == "__main__":
     main()
