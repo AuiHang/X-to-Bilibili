@@ -71,7 +71,7 @@ def main():
     last_id = load_last_tweet_id()
     # 初始化scraper并添加X Cookie
     scraper = TwitterUserScraper(TARGET_X_USERNAME)
-    scraper.session.headers.update({
+    scraper._session.headers.update({
         "Cookie": X_COOKIE,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     })
