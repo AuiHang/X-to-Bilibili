@@ -3,7 +3,7 @@ import json
 import asyncio
 import requests
 from bilibili_api import dynamic, Credential, sync
-import twscrape  # 替换snscrape为twscrape
+import twscrape
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
