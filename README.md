@@ -177,13 +177,13 @@ jobs:
           BILIBILI_BUVID3: ${{ secrets.BILIBILI_BUVID3 }}
         run: python sync.py
 ```
-### 步骤 4：测试运行    
-1.每个文件创建后，点击页面底部「Commit changes」保存（无需填写额外信息）；
-2.所有文件提交完成后，进入仓库 → 点击顶部「Actions」→ 左侧「X to Bilibili Sync」→ 点击右侧「Run workflow」→ 再次点击「Run workflow」手动触发运行；
-3.点击最新的运行记录 → 点击「sync」→ 点击「Run sync script」查看详细日志：
-⚪显示「无新的原创推文，无需同步 📭」→ 脚本运行正常；
-⚪显示「B 站动态发布成功 ✅」→ 同步流程完全跑通；
-⚪显示登录失败相关报错 → 参考「常见问题」排查。
+### 步骤 4：测试运行
+1. 每个文件创建后，点击页面底部「Commit changes」保存（无需填写额外信息）；
+2. 所有文件提交完成后，进入仓库 → 点击顶部「Actions」→ 左侧「X to Bilibili Sync」→ 点击右侧「Run workflow」→ 再次点击「Run workflow」手动触发运行；
+3. 点击最新的运行记录 → 点击「sync」→ 点击「Run sync script」查看详细日志：
+   - 显示「无新的原创推文，无需同步 📭」→ 脚本运行正常；
+   - 显示「B站动态发布成功 ✅」→ 同步流程完全跑通；
+   - 显示登录失败相关报错 → 参考「常见问题」排查。
 
 ## 使用说明
 ### 查看运行日志
