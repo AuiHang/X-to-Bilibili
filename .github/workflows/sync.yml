@@ -16,13 +16,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # 替换snscrape为twscrape
           pip install twscrape bilibili-api-python requests urllib3
       - name: Run sync script
         env:
           TARGET_X_USERNAME: ${{ secrets.TARGET_X_USERNAME }}
-          X_USER: ${{ secrets.X_USER }}  # 新增：X账号
-          X_PASS: ${{ secrets.X_PASS }}  # 新增：X密码
+          X_USER: ${{ secrets.X_USER }}          # X账号（手机号/用户名）
+          X_PASS: ${{ secrets.X_PASS }}          # X密码
+          X_EMAIL: ${{ secrets.X_EMAIL }}        # X绑定的邮箱
+          X_EMAIL_PASS: ${{ secrets.X_EMAIL_PASS }}  # 邮箱密码
           BILIBILI_SESSDATA: ${{ secrets.BILIBILI_SESSDATA }}
           BILIBILI_BILI_JCT: ${{ secrets.BILIBILI_BILI_JCT }}
           BILIBILI_BUVID3: ${{ secrets.BILIBILI_BUVID3 }}
