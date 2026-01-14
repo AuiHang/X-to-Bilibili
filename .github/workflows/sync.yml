@@ -1,7 +1,7 @@
 name: X to Bilibili Sync
 on:
   schedule:
-    - cron: "*/10 * * * *"  # 每10分钟运行一次
+    - cron: "*/30 * * * *"  # 从10分钟改为30分钟
   workflow_dispatch:  # 允许手动触发
 
 jobs:
